@@ -7,13 +7,13 @@ import {
   waitFor,
 } from "@testing-library/react";
 import user from "@testing-library/user-event";
-import { QueryClient } from "react-query";
-import { QueryProvider } from "./query";
+import { defaultClient } from "./query";
 import { createMockServer } from "./mock-server";
 import App from "./App";
 
 let testServer = null;
 beforeEach(() => {
+  defaultClient.resetQueries();
   testServer = createMockServer({ environment: "test" });
   return testServer;
 });
@@ -98,17 +98,8 @@ test("Clicking on a todo item toggles it", async () => {
   expect(app.todoItemWithText(/thing/i)).not.toBeChecked();
 });
 
-function renderApp() {
-  const client = new QueryClient();
-  return render(
-    <QueryProvider {...{ client }}>
-      <App />
-    </QueryProvider>
-  );
-}
-
 function getApp() {
-  renderApp();
+  render(<App />);
   const app = {
     get heading() {
       return screen.getByText("Todo!");

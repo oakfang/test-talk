@@ -1,5 +1,6 @@
 import { useState } from "react";
 import styled from "styled-components";
+import { QueryProvider } from "./query";
 import { useTodosList, useTodosService } from "./hooks";
 
 function TodoList() {
@@ -60,13 +61,21 @@ function TodoAdder() {
   );
 }
 
-function App() {
+function HomePage() {
   return (
     <Page>
       <h1>Todo!</h1>
       <TodoAdder />
       <TodoList />
     </Page>
+  );
+}
+
+function App() {
+  return (
+    <QueryProvider>
+      <HomePage />
+    </QueryProvider>
   );
 }
 
