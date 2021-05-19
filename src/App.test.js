@@ -12,15 +12,6 @@ import { QueryProvider } from "./query";
 import { createMockServer } from "./mock-server";
 import App from "./App";
 
-function renderApp() {
-  const client = new QueryClient();
-  return render(
-    <QueryProvider {...{ client }}>
-      <App />
-    </QueryProvider>
-  );
-}
-
 let testServer = null;
 beforeEach(() => {
   testServer = createMockServer({ environment: "test" });
@@ -31,19 +22,19 @@ afterEach(() => {
 });
 
 test("App doesn't crash on startup", () => {
-  renderApp();
+  const app = getApp();
 
   expect(app.heading).toBeVisible();
 });
 
 test("Todo textbox is focused on startup", () => {
-  renderApp();
+  const app = getApp();
 
   expect(app.emptyTextbox).toHaveFocus();
 });
 
 test("Form should be invalid while textbox is empty", async () => {
-  renderApp();
+  const app = getApp();
 
   expect(app.emptyTextbox).not.toHaveValue();
   expect(app.addTodoButton).toBeDisabled();
@@ -59,7 +50,7 @@ test("Should fetch todos list", async () => {
     { done: false, text: "Do the thing" },
   ];
   todos.forEach((todo) => testServer.create("todo", todo));
-  renderApp();
+  const app = getApp();
 
   await app.waitForFetchedTodos();
   expect(app.allTodoItems).toHaveLength(2);
@@ -69,7 +60,7 @@ test("Should fetch todos list", async () => {
 });
 
 test("Should add a todo item on form submit", async () => {
-  renderApp();
+  const app = getApp();
 
   await app.waitForFetchedTodos();
   app.typeIntoTextbox("Foo bar{enter}");
@@ -80,7 +71,7 @@ test("Should add a todo item on form submit", async () => {
 });
 
 test("A freshly added todo item should not be editable", async () => {
-  renderApp();
+  const app = getApp();
 
   await app.waitForFetchedTodos();
   app.typeIntoTextbox("Foo bar{enter}");
@@ -97,7 +88,7 @@ test("Clicking on a todo item toggles it", async () => {
     { done: false, text: "Do the thing" },
   ];
   todos.forEach((todo) => testServer.create("todo", todo));
-  renderApp();
+  const app = getApp();
 
   await app.waitForFetchedTodos();
   app.clickOnTodoItem(/walk/i);
@@ -107,50 +98,64 @@ test("Clicking on a todo item toggles it", async () => {
   expect(app.todoItemWithText(/thing/i)).not.toBeChecked();
 });
 
-const app = {
-  get heading() {
-    return screen.getByText("Todo!");
-  },
+function renderApp() {
+  const client = new QueryClient();
+  return render(
+    <QueryProvider {...{ client }}>
+      <App />
+    </QueryProvider>
+  );
+}
 
-  get emptyTextbox() {
-    return screen.getByPlaceholderText(/here/i);
-  },
+function getApp() {
+  renderApp();
+  const app = {
+    get heading() {
+      return screen.getByText("Todo!");
+    },
 
-  get addTodoButton() {
-    return screen.getByText(/add/i);
-  },
+    get emptyTextbox() {
+      return screen.getByPlaceholderText(/here/i);
+    },
 
-  get todoList() {
-    return screen.getByRole("list");
-  },
+    get addTodoButton() {
+      return screen.getByText(/add/i);
+    },
 
-  get allTodoItems() {
-    try {
-      return getAllByRole(this.todoList, "listitem");
-    } catch {
-      return [];
-    }
-  },
+    get todoList() {
+      return screen.getByRole("list");
+    },
 
-  todoItemWithText(text) {
-    return getByLabelText(app.todoList, text);
-  },
+    get allTodoItems() {
+      try {
+        return getAllByRole(this.todoList, "listitem");
+      } catch {
+        return [];
+      }
+    },
 
-  typeIntoTextbox(text) {
-    user.type(app.emptyTextbox, text);
-  },
+    todoItemWithText(text) {
+      return getByLabelText(app.todoList, text);
+    },
 
-  clickOnAddButton() {
-    user.click(app.addTodoButton);
-  },
+    typeIntoTextbox(text) {
+      user.type(app.emptyTextbox, text);
+    },
 
-  clickOnTodoItem(text) {
-    user.click(app.todoItemWithText(text));
-  },
+    clickOnAddButton() {
+      user.click(app.addTodoButton);
+    },
 
-  async waitForFetchedTodos() {
-    if (screen.queryByText(/loading/i)) {
-      await waitForElementToBeRemoved(() => screen.getByText(/loading/i));
-    }
-  },
-};
+    clickOnTodoItem(text) {
+      user.click(app.todoItemWithText(text));
+    },
+
+    async waitForFetchedTodos() {
+      if (screen.queryByText(/loading/i)) {
+        await waitForElementToBeRemoved(() => screen.getByText(/loading/i));
+      }
+    },
+  };
+
+  return app;
+}
